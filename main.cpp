@@ -71,7 +71,7 @@ struct content{
     inline std::size_t frozen_id() const { return frozen().hash(); }
     inline std::string id() const { return (boost::format("%1%~%2%-%3%") % frozen_id() % hash() % angle()).str(); }
     inline bool operator<(const content& other) const { return id() < other.id(); }
-    private:
+    public:
         double _length;
         angle_type _angle;
 
@@ -128,6 +128,9 @@ struct package{
         ar & boost::serialization::make_nvp("params",  _parameters);
     }
 
+    auto begin() const { return _samples.begin(); }
+    auto end() const { return _samples.end(); }
+
     public:
         std::size_t generate(std::size_t contents, std::size_t angles);
     private:
@@ -149,9 +152,9 @@ std::ostream& mre::operator<<(std::ostream& stream, const mre::parameters& param
 }
 
 void mre::package::save(const std::string& filename) const {
-    std::ofstream stream(filename, std::ios::binary);
+    std::ofstream stream(filename);
     try{
-        boost::archive::binary_oarchive out(stream, boost::archive::no_tracking);
+        boost::archive::text_oarchive out(stream, boost::archive::no_tracking);
         std::cout << "serialization library version: " << out.get_library_version() << std::endl;
         out << *this;
     } catch(const std::exception& e){
@@ -161,9 +164,9 @@ void mre::package::save(const std::string& filename) const {
 }
 
 void mre::package::load(const std::string& filename){
-    std::ifstream stream(filename, std::ios::binary);
+    std::ifstream stream(filename);
     try{
-        boost::archive::binary_iarchive in(stream, boost::archive::no_tracking);
+        boost::archive::text_iarchive in(stream, boost::archive::no_tracking);
         std::cout << "serialization library version: " << in.get_library_version() << std::endl;
         in >> *this;
         _loaded = true;
@@ -201,6 +204,11 @@ int main(int argc, char** argv){
         };
         mre::package package(params);
         std::size_t count = package.generate(boost::lexical_cast<std::size_t>(argv[3]), 4);
+        std::size_t j = 0;
+        for(auto i = package.begin(); i != package.end(); ++i){
+            const mre::content& c = *i;
+            std::cout << j++ << " " << c._length << " " << c.angle() << std::endl;
+        }
         package.save(argv[2]);
         std::cout << "serialized: " << count << " contents" << std::endl;
         return 0;
