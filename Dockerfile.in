@@ -1,0 +1,31 @@
+# Use Ubuntu 22.04 as the base image
+FROM ubuntu:22.04
+
+# Install build essentials and Boost libraries
+RUN apt-get update -y -qq && apt-get install -y -qq --no-install-recommends \
+    build-essential libboost-program-options-dev libboost-serialization-dev libboost-python-dev libboost-numpy-dev \
+    imagemagick libmagickcore-dev libmagickwand-dev libmagick++-dev libexiv2-dev cmake python3-pip patchelf git> /dev/null
+
+# Set the working directory inside the container
+WORKDIR /code
+
+# Copy your project files into the Docker image
+COPY . .
+
+RUN mkdir /out
+
+# Create entrypoint script
+RUN printf '#!/bin/bash\n'                                                                       > /entrypoint.sh \
+ && printf 'cat /entrypoint.sh\n'                                                               >> /entrypoint.sh \
+ && printf 'mkdir -p /code/build-docker\n'                                                      >> /entrypoint.sh \
+ && printf 'cd /code/build-docker\n'                                                            >> /entrypoint.sh \
+ && printf 'cmake .. && make -j4\n'                                                             >> /entrypoint.sh \
+ && printf './mre pack arc 40\n'                                                                >> /entrypoint.sh \
+ && printf 'mv arc /out\n'                                                                      >> /entrypoint.sh \
+ && printf './mre unpack /out/arc\n'                                                            >> /entrypoint.sh \
+ && printf 'ls -hal /out\n'                                                                     >> /entrypoint.sh \
+ && printf 'cp -r /out/* /archives\n'                                                           >> /entrypoint.sh \
+ && chmod +x /entrypoint.sh
+
+# Set the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
