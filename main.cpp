@@ -123,10 +123,26 @@ struct package{
     const mre::content& operator[](const std::string& id) const;
     const mre::parameters& params() const { return _parameters; }
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-        ar & boost::serialization::make_nvp("samples", _samples);
-        ar & boost::serialization::make_nvp("params",  _parameters);
+    void save(Archive & ar, const unsigned int version) const {
+        ar << boost::serialization::make_nvp("samples", _samples);
+        ar << boost::serialization::make_nvp("params",  _parameters);
     }
+
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version) {
+        try{
+            container samples;
+            ar >> boost::serialization::make_nvp("samples", samples);
+            _samples.clear();
+            _samples.insert(samples.begin(), samples.end());
+        }catch(const std::exception& ex){
+            std::cout << ex.what() << std::endl;
+        }
+        ar >> boost::serialization::make_nvp("params",  _parameters);
+    }
+
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     public:
         std::size_t generate(std::size_t contents, std::size_t angles);
